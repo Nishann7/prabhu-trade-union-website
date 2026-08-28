@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import ContactMessage from "@/lib/models/ContactMessage";
 
 // =========================
 // CREATE MESSAGE (POST)
+// PUBLIC
 // =========================
 
 export async function POST(request: Request) {
@@ -19,11 +21,16 @@ export async function POST(request: Request) {
       message,
     } = body;
 
-    if (!name?.trim() || !email?.trim() || !message?.trim()) {
+    if (
+      !name?.trim() ||
+      !email?.trim() ||
+      !message?.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Name, email and message are required",
+          error:
+            "Name, email and message are required",
         },
         { status: 400 }
       );
@@ -62,17 +69,46 @@ export async function POST(request: Request) {
 }
 
 // =========================
+// ADMIN AUTHENTICATION
+// =========================
+
+async function requireAdmin() {
+  const session = await auth();
+
+  if (!session?.user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
+  return null;
+}
+
+// =========================
 // GET MESSAGES (GET)
+// ADMIN ONLY
 // =========================
 
 export async function GET() {
   try {
+    const unauthorized = await requireAdmin();
+
+    if (unauthorized) {
+      return unauthorized;
+    }
+
     await connectDB();
 
     const messages =
-      await ContactMessage.find().sort({
-        createdAt: -1,
-      });
+      await ContactMessage.find()
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
 
     return NextResponse.json({
       success: true,
@@ -96,10 +132,17 @@ export async function GET() {
 
 // =========================
 // DELETE MESSAGE (DELETE)
+// ADMIN ONLY
 // =========================
 
 export async function DELETE(request: Request) {
   try {
+    const unauthorized = await requireAdmin();
+
+    if (unauthorized) {
+      return unauthorized;
+    }
+
     await connectDB();
 
     const { id } = await request.json();
@@ -114,7 +157,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedMessage = await ContactMessage.findByIdAndDelete(id);
+    const deletedMessage =
+      await ContactMessage.findByIdAndDelete(id);
 
     if (!deletedMessage) {
       return NextResponse.json(
@@ -131,7 +175,10 @@ export async function DELETE(request: Request) {
       message: "Message deleted successfully",
     });
   } catch (error) {
-    console.error("DELETE contact message error:", error);
+    console.error(
+      "DELETE contact message error:",
+      error
+    );
 
     return NextResponse.json(
       {
@@ -144,40 +191,120 @@ export async function DELETE(request: Request) {
 }
 
 // =========================
-// UPDATE MESSAGE STATUS (PUT)
+// UPDATE MESSAGE
+// PUT
+// ADMIN ONLY
 // =========================
 
 export async function PUT(request: Request) {
   try {
+    const unauthorized = await requireAdmin();
+
+    if (unauthorized) {
+      return unauthorized;
+    }
+
     await connectDB();
 
-    const { id, status } = await request.json();
-
-    if (!id || !status) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Message ID and status are required",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (status !== "pending" && status !== "resolved") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid status value. Use 'pending' or 'resolved'.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const updatedMessage = await ContactMessage.findByIdAndUpdate(
+    const {
       id,
-      { status },
-      { new: true }
-    );
+      status,
+      read,
+    } = await request.json();
+
+    // -------------------------
+    // ID VALIDATION
+    // -------------------------
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Message ID is required",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -------------------------
+    // STATUS VALIDATION
+    // -------------------------
+
+    if (
+      status !== undefined &&
+      status !== "pending" &&
+      status !== "resolved"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid status value. Use 'pending' or 'resolved'.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -------------------------
+    // READ VALIDATION
+    // -------------------------
+
+    if (
+      read !== undefined &&
+      typeof read !== "boolean"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid read value.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -------------------------
+    // BUILD UPDATE
+    // -------------------------
+
+    const update: {
+      status?: "pending" | "resolved";
+      read?: boolean;
+    } = {};
+
+    if (status !== undefined) {
+      update.status = status;
+    }
+
+    if (read !== undefined) {
+      update.read = read;
+    }
+
+    // -------------------------
+    // NOTHING TO UPDATE
+    // -------------------------
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Nothing to update",
+        },
+        { status: 400 }
+      );
+    }
+
+    // -------------------------
+    // UPDATE MESSAGE
+    // -------------------------
+
+    const updatedMessage =
+      await ContactMessage.findByIdAndUpdate(
+        id,
+        update,
+        {
+          new: true,
+        }
+      );
 
     if (!updatedMessage) {
       return NextResponse.json(
@@ -191,16 +318,20 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Status updated successfully",
+      message: "Message updated successfully",
       contactMessage: updatedMessage,
     });
   } catch (error) {
-    console.error("PUT contact message error:", error);
+    console.error(
+      "PUT contact message error:",
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to update message status",
+        error:
+          "Failed to update message",
       },
       { status: 500 }
     );
