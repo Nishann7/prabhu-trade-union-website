@@ -1,6 +1,6 @@
-# Prabhu Trade Union Website
+# Prabhu Union Website
 
-A modern full-stack website developed for Prabhu Trade Union.
+A modern full-stack website developed for Prabhu Union.
 
 ## Features
 - Modern responsive homepage

@@ -38,7 +38,7 @@ export default function CommitteePage() {
           </h1>
 
           <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-8">
-            Meet the elected representatives leading Prabhu Trade Union with
+            Meet the elected representatives leading Prabhu Union with
             dedication, transparency, and commitment to member welfare.
           </p>
         </div>

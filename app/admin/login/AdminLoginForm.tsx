@@ -105,7 +105,7 @@ export default function AdminLoginForm() {
                 text-white
               "
             >
-              PTU
+              PU
             </div>
 
             <h1 className="text-2xl font-bold text-slate-900">
@@ -113,7 +113,7 @@ export default function AdminLoginForm() {
             </h1>
 
             <p className="mt-2 text-sm text-slate-500">
-              Prabhu Trade Union Administration
+              Prabhu Union Administration
             </p>
 
           </div>

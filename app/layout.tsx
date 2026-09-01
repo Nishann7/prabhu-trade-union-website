@@ -15,9 +15,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Prabhu Trade Union | Official Website',
+  title: 'Prabhu Union | Official Website',
   description:
-    'Official website of Prabhu Trade Union. Notices, welfare programs, membership information, and union activities.',
+    'Official website of Prabhu Union. Notices, welfare programs, membership information, and union activities.',
 };
 
 export default function RootLayout({

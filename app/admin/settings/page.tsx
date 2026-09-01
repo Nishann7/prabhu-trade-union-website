@@ -19,7 +19,7 @@ type ToastState = {
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>({
-    unionName: "Prabhu Trade Union",
+    unionName: "Prabhu Union",
     address: "",
     phone: "",
     email: "",
@@ -231,7 +231,7 @@ export default function AdminSettingsPage() {
         <div className="mb-12">
 
           <p className="mb-4 text-sm uppercase tracking-[0.28em] text-red-900">
-            Prabhu Trade Union
+            Prabhu Union
           </p>
 
           <h1 className="font-serif text-4xl font-medium text-[#171717] md:text-5xl">
@@ -240,7 +240,7 @@ export default function AdminSettingsPage() {
 
           <p className="mt-4 max-w-xl leading-7 text-gray-500">
             Manage the basic information displayed
-            throughout the Prabhu Trade Union website.
+            throughout the Prabhu Union website.
           </p>
 
         </div>
@@ -373,7 +373,7 @@ export default function AdminSettingsPage() {
                     )
                   }
                   disabled={saving}
-                  placeholder="Prabhu Trade Union"
+                  placeholder="Prabhu Union"
                   className="
                     w-full
                     rounded-2xl

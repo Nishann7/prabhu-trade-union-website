@@ -58,7 +58,7 @@ export default function ApplyPage() {
           </h1>
 
           <p>
-            Become part of Prabhu Trade Union and join a collective effort
+            Become part of Prabhu Union and join a collective effort
             dedicated to workers&apos; rights, dignity, and welfare.
           </p>
         </div>
@@ -67,7 +67,7 @@ export default function ApplyPage() {
       <section className="apply-section">
         <div className="apply-container">
           <div className="apply-intro">
-            <p className="section-label">JOIN PRABHU TRADE UNION</p>
+            <p className="section-label">JOIN Prabhu Union</p>
 
             <h2>Membership application</h2>
 

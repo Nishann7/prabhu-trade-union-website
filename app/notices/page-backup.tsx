@@ -391,7 +391,7 @@ export default function AdminNoticesPage() {
           <div>
 
             <p className="mb-4 text-sm uppercase tracking-[0.28em] text-red-900">
-              Prabhu Trade Union
+              Prabhu Union
             </p>
 
             <h1 className="font-serif text-4xl font-medium leading-tight text-[#171717] md:text-5xl">

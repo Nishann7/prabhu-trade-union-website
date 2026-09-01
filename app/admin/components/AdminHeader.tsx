@@ -38,7 +38,7 @@ export default function AdminHeader() {
             </p>
 
             <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-              Trade Union
+              Prabhu Union
             </p>
           </div>
         </Link>

@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import Notice from "@/lib/models/Notice";
 
 // =========================
 // GET ALL NOTICES
+// PUBLIC
 // =========================
 
 export async function GET() {
   try {
     await connectDB();
 
-   const notices = await Notice.find().sort({
-  date: -1,
-  createdAt: -1,
-});
+    const notices = await Notice.find().sort({
+      date: -1,
+      createdAt: -1,
+    });
+
     return NextResponse.json({
       success: true,
       notices,
@@ -33,10 +36,23 @@ export async function GET() {
 
 // =========================
 // CREATE NOTICE
+// ADMIN ONLY
 // =========================
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+        },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
 
     const body = await request.json();
@@ -90,10 +106,23 @@ export async function POST(request: Request) {
 
 // =========================
 // DELETE NOTICE
+// ADMIN ONLY
 // =========================
 
 export async function DELETE(request: Request) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+        },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
 
     const { id } = await request.json();

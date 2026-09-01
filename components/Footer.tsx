@@ -8,7 +8,7 @@ export default function Footer() {
         {/* Brand */}
         <div>
           <h3 className="font-serif text-2xl text-white">
-            Prabhu Trade Union
+            Prabhu Union
           </h3>
 
           <p className="mt-4 text-sm leading-7 text-gray-300">
@@ -101,7 +101,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 text-xs text-gray-400 md:flex-row md:items-center md:justify-between">
-          <p>© 2026 Prabhu Trade Union. All rights reserved.</p>
+          <p>© 2026 Prabhu Union. All rights reserved.</p>
 
           <p>Designed & Developed by Nishan Karki</p>
         </div>

@@ -4,7 +4,7 @@ export default function DownloadsPage() {
       <section className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-14">
           <p className="text-sm tracking-[0.25em] uppercase text-red-900 mb-4">
-            Prabhu Trade Union
+            Prabhu Union
           </p>
 
           <h1 className="text-5xl font-serif text-[#171717] mb-6">

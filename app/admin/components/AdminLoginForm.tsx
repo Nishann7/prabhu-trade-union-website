@@ -33,7 +33,7 @@ export default function AdminLoginForm() {
 
     /*
      * Mark this browser tab as an active
-     * Prabhu Trade Union admin session.
+     * Prabhu Union admin session.
      *
      * sessionStorage belongs only to this tab.
      * It survives refreshes but is removed
@@ -89,7 +89,7 @@ export default function AdminLoginForm() {
               uppercase
             "
           >
-            Prabhu Trade Union
+            Prabhu Union
           </p>
 
           <h1 className="text-3xl font-serif mt-3">

@@ -281,7 +281,7 @@ export default function AdminDashboard() {
                           text-gray-500
                         "
                       >
-                        Trade Union
+                        Prabhu Union
                       </p>
 
                     </div>
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
                   leading-relaxed
                 "
               >
-                Manage Prabhu Trade Union&apos;s website,
+                Manage Prabhu Union&apos;s website,
                 notices, gallery, members, and organizational
                 information from one place.
               </p>
@@ -974,7 +974,7 @@ export default function AdminDashboard() {
               >
 
                 <p>
-                  Prabhu Trade Union — Administration
+                  Prabhu Union — Administration
                 </p>
 
                 <p>

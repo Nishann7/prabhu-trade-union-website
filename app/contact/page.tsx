@@ -21,7 +21,7 @@ export default function ContactPage() {
   // =========================
 
   const [settings, setSettings] = useState<Settings>({
-    unionName: "Prabhu Trade Union",
+    unionName: "Prabhu Union",
     address: "Kathmandu, Nepal",
     phone: "+977-9800000000",
     email: "info@prabhutradeunion.np",
@@ -56,7 +56,7 @@ export default function ContactPage() {
           setSettings({
             unionName:
               data.settings.unionName ||
-              "Prabhu Trade Union",
+              "Prabhu Union",
 
             address:
               data.settings.address ||
@@ -698,7 +698,7 @@ export default function ContactPage() {
                   leading-7
                 ">
                   Your message has been successfully
-                  received by Prabhu Trade Union. Our
+                  received by Prabhu Union. Our
                   team will review your message and get
                   back to you as soon as possible.
                 </p>
@@ -755,7 +755,7 @@ export default function ContactPage() {
             style={{ border: 0 }}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            title="Prabhu Trade Union Office Location"
+            title="Prabhu Union Office Location"
           />
 
         </div>

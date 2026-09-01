@@ -48,7 +48,7 @@ export default function Navbar() {
 
           <div>
             <p className="font-serif text-xl leading-none text-red-900">
-              Prabhu Trade Union
+              Prabhu Union
             </p>
             <p className="text-xs tracking-[0.2em] uppercase text-gray-500">
               Official Website

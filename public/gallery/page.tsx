@@ -51,7 +51,7 @@ export default function GalleryPage() {
         <div className="text-center mb-14">
 
           <p className="text-sm tracking-[0.28em] uppercase text-red-900 mb-4">
-            Prabhu Trade Union
+            Prabhu Union
           </p>
 
           <h1 className="text-5xl font-bold text-red-900 mb-4">
@@ -153,7 +153,7 @@ export default function GalleryPage() {
                     text-gray-500
                     text-sm
                   ">
-                    Prabhu Trade Union
+                    Prabhu Union
                   </p>
 
                   <p className="

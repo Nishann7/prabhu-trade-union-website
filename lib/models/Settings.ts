@@ -4,7 +4,7 @@ const SettingsSchema = new Schema(
   {
     unionName: {
       type: String,
-      default: "Prabhu Trade Union",
+      default: "Prabhu Union",
     },
 
     address: {

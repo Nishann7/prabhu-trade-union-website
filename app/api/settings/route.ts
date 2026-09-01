@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import Settings from "@/lib/models/Settings";
 
 // =========================
-// GET SETTINGS
+// GET SETTINGS - PUBLIC
 // =========================
 
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
     // Create default settings if none exist
     if (!settings) {
       settings = await Settings.create({
-        unionName: "Prabhu Trade Union",
+        unionName: "Prabhu Union",
         address: "",
         phone: "",
         email: "",
@@ -40,11 +41,24 @@ export async function GET() {
 }
 
 // =========================
-// UPDATE SETTINGS
+// UPDATE SETTINGS - ADMIN ONLY
 // =========================
 
 export async function PUT(request: Request) {
   try {
+    // Check authentication
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+        },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
 
     const body = await request.json();

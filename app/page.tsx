@@ -70,7 +70,7 @@ export default function HomePage() {
         <div className="hero-content">
 
           <div className="hero-badge">
-            PRABHU TRADE UNION
+            Prabhu Union
           </div>
 
           <h1>
@@ -173,7 +173,7 @@ export default function HomePage() {
           <div className="intro-text">
 
             <p>
-              Prabhu Trade Union is committed to
+              Prabhu Union is committed to
               representing and supporting workers through
               unity, fairness, and collective action.
             </p>
@@ -495,7 +495,7 @@ export default function HomePage() {
           </h2>
 
           <p>
-            Connect with Prabhu Trade Union, learn about
+            Connect with Prabhu Union, learn about
             our work, or reach out to us for support.
           </p>
 

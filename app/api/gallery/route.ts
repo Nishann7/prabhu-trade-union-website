@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import Gallery from "@/lib/models/Gallery";
 
@@ -10,6 +11,7 @@ const CLOUDINARY_UPLOAD_PRESET =
 
 // =========================
 // GET ALL GALLERY PHOTOS
+// PUBLIC
 // =========================
 
 export async function GET() {
@@ -39,13 +41,25 @@ export async function GET() {
 
 // =========================
 // UPLOAD GALLERY PHOTO
+// ADMIN ONLY
 // =========================
 
 export async function POST(request: Request) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
   try {
     await connectDB();
 
-    // Check Cloudinary configuration
     if (!CLOUDINARY_CLOUD_NAME) {
       return NextResponse.json(
         {
@@ -56,13 +70,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get form data
     const formData = await request.formData();
 
     const title = formData.get("title");
     const file = formData.get("file");
 
-    // Validate title
     if (
       !title ||
       typeof title !== "string" ||
@@ -77,7 +89,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate file
     if (!(file instanceof File)) {
       return NextResponse.json(
         {
@@ -88,7 +99,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate image
     if (!file.type.startsWith("image/")) {
       return NextResponse.json(
         {
@@ -99,16 +109,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Convert file to Buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create Cloudinary upload URL
     const cloudinaryUrl =
       `https://api.cloudinary.com/v1_1/` +
       `${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
-    // Create multipart form
     const cloudinaryForm = new FormData();
 
     cloudinaryForm.append(
@@ -124,7 +131,6 @@ export async function POST(request: Request) {
       CLOUDINARY_UPLOAD_PRESET
     );
 
-    // Upload to Cloudinary
     const cloudinaryResponse = await fetch(
       cloudinaryUrl,
       {
@@ -141,7 +147,6 @@ export async function POST(request: Request) {
       cloudinaryData
     );
 
-    // Check Cloudinary response
     if (!cloudinaryResponse.ok) {
       return NextResponse.json(
         {
@@ -154,7 +159,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Save image URL in MongoDB
     const photo = await Gallery.create({
       title: title.trim(),
       imageUrl: cloudinaryData.secure_url,
@@ -189,11 +193,24 @@ export async function POST(request: Request) {
 
 // =========================
 // DELETE GALLERY PHOTO
+// ADMIN ONLY
 // =========================
 
 export async function DELETE(
   request: Request
 ) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
   try {
     await connectDB();
 

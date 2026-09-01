@@ -209,7 +209,7 @@ export default function AdminMessagesPage() {
         <div className="mb-12">
 
           <p className="text-sm tracking-[0.28em] uppercase text-red-900 mb-4">
-            Prabhu Trade Union
+            Prabhu Union
           </p>
 
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
@@ -493,7 +493,7 @@ export default function AdminMessagesPage() {
             <div className="mb-6">
 
               <p className="text-xs tracking-[0.25em] uppercase text-red-900 mb-3">
-                Prabhu Trade Union
+                Prabhu Union
               </p>
 
               <h2 className="text-2xl font-serif text-[#171717]">

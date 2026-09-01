@@ -48,7 +48,7 @@ export default function GalleryPage() {
         <div className="text-center mb-16">
 
           <p className="text-sm tracking-[0.25em] uppercase text-red-900 mb-4">
-            Prabhu Trade Union
+            Prabhu Union
           </p>
 
           <h1 className="text-5xl md:text-6xl font-serif font-medium text-[#171717] mb-6">

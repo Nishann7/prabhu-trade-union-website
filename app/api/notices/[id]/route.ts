@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import Notice from "@/lib/models/Notice";
 
@@ -10,12 +11,25 @@ type RouteContext = {
 
 // =========================
 // UPDATE NOTICE
+// ADMIN ONLY
 // =========================
 
 export async function PUT(
   request: Request,
   context: RouteContext
 ) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
   try {
     await connectDB();
 
@@ -91,12 +105,25 @@ export async function PUT(
 
 // =========================
 // DELETE NOTICE BY ID
+// ADMIN ONLY
 // =========================
 
 export async function DELETE(
   request: Request,
   context: RouteContext
 ) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
   try {
     await connectDB();
 

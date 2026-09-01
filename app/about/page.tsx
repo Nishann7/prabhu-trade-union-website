@@ -86,7 +86,7 @@ export default function AboutPage() {
 
           <div className="about-hero-content">
             <p className="about-eyebrow">
-              ABOUT PRABHU TRADE UNION
+              ABOUT Prabhu Union
             </p>
 
             <h1>
@@ -95,7 +95,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="about-hero-description">
-              Prabhu Trade Union is committed to protecting workers&apos;
+              Prabhu Union is committed to protecting workers&apos;
               rights, promoting welfare, and building a stronger professional
               community through unity and collective action.
             </p>
@@ -137,7 +137,7 @@ export default function AboutPage() {
 
               <p>
                 Established with the goal of representing and supporting its
-                members, Prabhu Trade Union has steadily grown into a
+                members, Prabhu Union has steadily grown into a
                 respected organization that advocates for fair treatment,
                 professional dignity, and collective welfare.
               </p>
@@ -473,7 +473,7 @@ export default function AboutPage() {
               <div className="commitment-line" />
 
               <span>
-                PRABHU TRADE UNION
+                Prabhu Union
               </span>
 
             </div>
@@ -504,7 +504,7 @@ export default function AboutPage() {
 
           <p>
             Learn more about our work, become a member, or get in touch
-            with Prabhu Trade Union.
+            with Prabhu Union.
           </p>
 
         </div>
