@@ -749,7 +749,7 @@ export default function ContactPage() {
         ">
 
           <iframe
-            src="https://www.google.com/maps?q=Kathmandu,Nepal&output=embed"
+            src="https://www.google.com/maps?q=M8RH%2BV94,+Kathmandu,+Bagmati+Province+44600,+Nepal&output=embed"
             width="100%"
             height="420"
             style={{ border: 0 }}
