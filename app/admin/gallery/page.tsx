@@ -101,6 +101,18 @@ export default function AdminGalleryPage() {
   }, []);
 
   // =========================
+  // CLEAN PREVIEW URL
+  // =========================
+
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  // =========================
   // SELECT IMAGE
   // =========================
 
@@ -115,7 +127,8 @@ export default function AdminGalleryPage() {
       return;
     }
 
-    // Check image type
+    // Check image type only.
+    // No client-side file-size restriction.
     if (!selectedFile.type.startsWith("image/")) {
       showToast(
         "error",
@@ -129,21 +142,7 @@ export default function AdminGalleryPage() {
       return;
     }
 
-    // Maximum 10MB
-    if (selectedFile.size > 10 * 1024 * 1024) {
-      showToast(
-        "error",
-        "Image must be smaller than 10MB."
-      );
-
-      e.target.value = "";
-      setFile(null);
-      setPreview("");
-
-      return;
-    }
-
-    // Remove old preview
+    // Remove previous preview URL
     if (preview) {
       URL.revokeObjectURL(preview);
     }
@@ -360,9 +359,7 @@ export default function AdminGalleryPage() {
   return (
     <main className="min-h-screen bg-[#f7f5f0] px-6 py-12 md:px-8">
 
-      {/* =========================
-          TOAST
-      ========================= */}
+      {/* TOAST */}
 
       {toast && (
         <Toast
@@ -374,15 +371,11 @@ export default function AdminGalleryPage() {
 
       <div className="mx-auto max-w-6xl">
 
-        {/* =========================
-            ADMIN NAVIGATION
-        ========================= */}
+        {/* ADMIN NAVIGATION */}
 
         <AdminHeader />
 
-        {/* =========================
-            PAGE HEADER
-        ========================= */}
+        {/* PAGE HEADER */}
 
         <div className="mb-14">
 
@@ -402,9 +395,7 @@ export default function AdminGalleryPage() {
 
         </div>
 
-        {/* =========================
-            UPLOAD CARD
-        ========================= */}
+        {/* UPLOAD CARD */}
 
         <div
           className="
@@ -589,8 +580,7 @@ export default function AdminGalleryPage() {
                 />
 
                 <p className="mt-2 text-xs text-gray-500">
-                  JPG, PNG, WEBP or other image
-                  files. Maximum 10MB.
+                  JPG, PNG, WEBP or other image files.
                 </p>
 
               </div>
@@ -700,9 +690,7 @@ export default function AdminGalleryPage() {
 
         </div>
 
-        {/* =========================
-            EXISTING PHOTOS
-        ========================= */}
+        {/* EXISTING PHOTOS */}
 
         <div className="mb-8">
 
@@ -716,9 +704,7 @@ export default function AdminGalleryPage() {
 
         </div>
 
-        {/* =========================
-            LOADING
-        ========================= */}
+        {/* LOADING */}
 
         {loading && (
           <div
@@ -755,9 +741,7 @@ export default function AdminGalleryPage() {
           </div>
         )}
 
-        {/* =========================
-            EMPTY STATE
-        ========================= */}
+        {/* EMPTY STATE */}
 
         {!loading && photos.length === 0 && (
           <div
@@ -801,9 +785,7 @@ export default function AdminGalleryPage() {
           </div>
         )}
 
-        {/* =========================
-            PHOTO GRID
-        ========================= */}
+        {/* PHOTO GRID */}
 
         {!loading && photos.length > 0 && (
           <div
@@ -847,6 +829,7 @@ export default function AdminGalleryPage() {
                   <img
                     src={photo.imageUrl}
                     alt={photo.title}
+                    loading="lazy"
                     className="
                       h-full
                       w-full
@@ -942,9 +925,7 @@ export default function AdminGalleryPage() {
 
       </div>
 
-      {/* =========================
-          DELETE CONFIRMATION MODAL
-      ========================= */}
+      {/* DELETE CONFIRMATION MODAL */}
 
       {deleteId && (
         <div

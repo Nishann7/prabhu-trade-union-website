@@ -75,6 +75,10 @@ export async function POST(request: Request) {
     const title = formData.get("title");
     const file = formData.get("file");
 
+    // -------------------------
+    // Validate title
+    // -------------------------
+
     if (
       !title ||
       typeof title !== "string" ||
@@ -89,6 +93,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // -------------------------
+    // Validate file
+    // -------------------------
+
     if (!(file instanceof File)) {
       return NextResponse.json(
         {
@@ -98,6 +106,10 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // -------------------------
+    // Validate image type
+    // -------------------------
 
     if (!file.type.startsWith("image/")) {
       return NextResponse.json(
@@ -109,8 +121,24 @@ export async function POST(request: Request) {
       );
     }
 
+    // -------------------------
+    // NO 4MB FILE SIZE LIMIT
+    // -------------------------
+    // Images are allowed to be larger than 4MB.
+    // The actual upload limit can still be
+    // determined by the hosting platform and
+    // Cloudinary.
+
+    // -------------------------
+    // Convert file to buffer
+    // -------------------------
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    // -------------------------
+    // Cloudinary upload
+    // -------------------------
 
     const cloudinaryUrl =
       `https://api.cloudinary.com/v1_1/` +
@@ -158,6 +186,10 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // -------------------------
+    // Save to MongoDB
+    // -------------------------
 
     const photo = await Gallery.create({
       title: title.trim(),
