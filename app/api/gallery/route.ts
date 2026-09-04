@@ -3,16 +3,9 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import Gallery from "@/lib/models/Gallery";
 
-const CLOUDINARY_CLOUD_NAME =
-  process.env.CLOUDINARY_CLOUD_NAME;
-
-const CLOUDINARY_UPLOAD_PRESET =
-  "prabhu_gallery";
-
-// =========================
-// GET ALL GALLERY PHOTOS
-// PUBLIC
-// =========================
+// =====================================================
+// GET - Fetch all gallery photos
+// =====================================================
 
 export async function GET() {
   try {
@@ -39,12 +32,12 @@ export async function GET() {
   }
 }
 
-// =========================
-// UPLOAD GALLERY PHOTO
-// ADMIN ONLY
-// =========================
+// =====================================================
+// POST - Save Cloudinary image URL
+// =====================================================
 
 export async function POST(request: Request) {
+  // Admin authentication
   const session = await auth();
 
   if (!session?.user) {
@@ -60,25 +53,13 @@ export async function POST(request: Request) {
   try {
     await connectDB();
 
-    if (!CLOUDINARY_CLOUD_NAME) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "CLOUDINARY_CLOUD_NAME is missing",
-        },
-        { status: 500 }
-      );
-    }
+    // The image is already uploaded directly to Cloudinary.
+    // We only receive the title and Cloudinary URL here.
+    const body = await request.json();
 
-    const formData = await request.formData();
+    const { title, imageUrl } = body;
 
-    const title = formData.get("title");
-    const file = formData.get("file");
-
-    // -------------------------
     // Validate title
-    // -------------------------
-
     if (
       !title ||
       typeof title !== "string" ||
@@ -93,107 +74,36 @@ export async function POST(request: Request) {
       );
     }
 
-    // -------------------------
-    // Validate file
-    // -------------------------
-
-    if (!(file instanceof File)) {
+    // Validate image URL
+    if (
+      !imageUrl ||
+      typeof imageUrl !== "string" ||
+      !imageUrl.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Photo file is required",
+          error: "Image URL is required",
         },
         { status: 400 }
       );
     }
 
-    // -------------------------
-    // Validate image type
-    // -------------------------
-
-    if (!file.type.startsWith("image/")) {
+    // Optional basic Cloudinary URL validation
+    if (!imageUrl.includes("res.cloudinary.com")) {
       return NextResponse.json(
         {
           success: false,
-          error: "Only image files are allowed",
+          error: "Invalid Cloudinary image URL",
         },
         { status: 400 }
       );
     }
 
-    // -------------------------
-    // NO 4MB FILE SIZE LIMIT
-    // -------------------------
-    // Images are allowed to be larger than 4MB.
-    // The actual upload limit can still be
-    // determined by the hosting platform and
-    // Cloudinary.
-
-    // -------------------------
-    // Convert file to buffer
-    // -------------------------
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // -------------------------
-    // Cloudinary upload
-    // -------------------------
-
-    const cloudinaryUrl =
-      `https://api.cloudinary.com/v1_1/` +
-      `${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-    const cloudinaryForm = new FormData();
-
-    cloudinaryForm.append(
-      "file",
-      new Blob([buffer], {
-        type: file.type,
-      }),
-      file.name
-    );
-
-    cloudinaryForm.append(
-      "upload_preset",
-      CLOUDINARY_UPLOAD_PRESET
-    );
-
-    const cloudinaryResponse = await fetch(
-      cloudinaryUrl,
-      {
-        method: "POST",
-        body: cloudinaryForm,
-      }
-    );
-
-    const cloudinaryData =
-      await cloudinaryResponse.json();
-
-    console.log(
-      "Cloudinary response:",
-      cloudinaryData
-    );
-
-    if (!cloudinaryResponse.ok) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            cloudinaryData?.error?.message ||
-            "Cloudinary upload failed",
-        },
-        { status: 500 }
-      );
-    }
-
-    // -------------------------
     // Save to MongoDB
-    // -------------------------
-
     const photo = await Gallery.create({
       title: title.trim(),
-      imageUrl: cloudinaryData.secure_url,
+      imageUrl: imageUrl.trim(),
     });
 
     return NextResponse.json(
@@ -216,21 +126,21 @@ export async function POST(request: Request) {
         success: false,
         error:
           error?.message ||
-          "Failed to upload gallery photo",
+          "Failed to save gallery photo",
       },
       { status: 500 }
     );
   }
 }
 
-// =========================
-// DELETE GALLERY PHOTO
-// ADMIN ONLY
-// =========================
+// =====================================================
+// DELETE - Delete gallery photo
+// =====================================================
 
 export async function DELETE(
   request: Request
 ) {
+  // Admin authentication
   const session = await auth();
 
   if (!session?.user) {
@@ -246,7 +156,9 @@ export async function DELETE(
   try {
     await connectDB();
 
-    const { id } = await request.json();
+    const body = await request.json();
+
+    const { id } = body;
 
     if (!id) {
       return NextResponse.json(

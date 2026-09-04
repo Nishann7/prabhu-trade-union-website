@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Toast from "../components/Toast";
-import AdminHeader from "../components/AdminHeader";
 import {
   Upload,
   Trash2,
   Image as ImageIcon,
   X,
-  AlertTriangle,
 } from "lucide-react";
+
+import AdminHeader from "@/app/admin/components/AdminHeader";
 
 type GalleryPhoto = {
   _id: string;
@@ -19,8 +18,8 @@ type GalleryPhoto = {
 };
 
 type ToastState = {
-  type: "success" | "error";
   message: string;
+  type: "success" | "error";
 } | null;
 
 export default function AdminGalleryPage() {
@@ -37,84 +36,47 @@ export default function AdminGalleryPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteTitle, setDeleteTitle] = useState("");
 
-  // =========================
-  // SHOW TOAST
-  // =========================
-
   const showToast = (
-    type: "success" | "error",
-    message: string
+    message: string,
+    type: "success" | "error"
   ) => {
-    setToast({
-      type,
-      message,
-    });
+    setToast({ message, type });
 
-    window.setTimeout(() => {
+    setTimeout(() => {
       setToast(null);
-    }, 4000);
+    }, 3000);
   };
-
-  // =========================
-  // FETCH GALLERY
-  // =========================
 
   const fetchPhotos = async () => {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/gallery", {
-        cache: "no-store",
-      });
+      const response = await fetch("/api/gallery");
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error || "Failed to load gallery."
+          data?.error || "Failed to fetch gallery"
         );
       }
 
       setPhotos(data.photos || []);
     } catch (error) {
-      console.error("Gallery fetch error:", error);
-
-      setPhotos([]);
+      console.error("Failed to load gallery:", error);
 
       showToast(
-        "error",
-        error instanceof Error
-          ? error.message
-          : "Failed to load gallery."
+        "Failed to load gallery photos.",
+        "error"
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================
-  // INITIAL LOAD
-  // =========================
-
   useEffect(() => {
     fetchPhotos();
   }, []);
-
-  // =========================
-  // CLEAN PREVIEW URL
-  // =========================
-
-  useEffect(() => {
-    return () => {
-      if (preview) {
-        URL.revokeObjectURL(preview);
-      }
-    };
-  }, [preview]);
-
-  // =========================
-  // SELECT IMAGE
-  // =========================
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -122,102 +84,126 @@ export default function AdminGalleryPage() {
     const selectedFile = e.target.files?.[0];
 
     if (!selectedFile) {
-      setFile(null);
-      setPreview("");
       return;
     }
 
-    // Check image type only.
-    // No client-side file-size restriction.
     if (!selectedFile.type.startsWith("image/")) {
       showToast(
-        "error",
-        "Please select a valid image file."
+        "Please select a valid image file.",
+        "error"
       );
-
-      e.target.value = "";
-      setFile(null);
-      setPreview("");
-
       return;
     }
 
-    // Remove previous preview URL
+    setFile(selectedFile);
+
     if (preview) {
       URL.revokeObjectURL(preview);
     }
 
-    const previewUrl =
-      URL.createObjectURL(selectedFile);
+    const objectUrl = URL.createObjectURL(selectedFile);
 
-    setFile(selectedFile);
-    setPreview(previewUrl);
+    setPreview(objectUrl);
   };
-
-  // =========================
-  // UPLOAD PHOTO
-  // =========================
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
 
-    if (saving) {
-      return;
-    }
-
     if (!title.trim()) {
       showToast(
-        "error",
-        "Please enter a photo title."
+        "Please enter a photo title.",
+        "error"
       );
-
       return;
     }
 
     if (!file) {
       showToast(
-        "error",
-        "Please select a photo."
+        "Please select an image.",
+        "error"
       );
-
       return;
     }
 
     try {
       setSaving(true);
 
-      const formData = new FormData();
+      // =====================================================
+      // STEP 1: Upload image directly to Cloudinary
+      // =====================================================
 
-      formData.append(
-        "title",
-        title.trim()
+      const cloudinaryForm = new FormData();
+
+      cloudinaryForm.append("file", file);
+      cloudinaryForm.append(
+        "upload_preset",
+        "prabhu_gallery"
       );
 
-      formData.append(
-        "file",
-        file
-      );
-
-      const response = await fetch(
-        "/api/gallery",
+      const cloudinaryResponse = await fetch(
+        "https://api.cloudinary.com/v1_1/xsthhe4y/image/upload",
         {
           method: "POST",
-          body: formData,
+          body: cloudinaryForm,
         }
       );
+
+      const cloudinaryData =
+        await cloudinaryResponse.json();
+
+      console.log(
+        "Cloudinary response:",
+        cloudinaryData
+      );
+
+      if (!cloudinaryResponse.ok) {
+        throw new Error(
+          cloudinaryData?.error?.message ||
+            "Cloudinary upload failed."
+        );
+      }
+
+      if (!cloudinaryData.secure_url) {
+        throw new Error(
+          "Cloudinary did not return an image URL."
+        );
+      }
+
+      // =====================================================
+      // STEP 2: Send only title + URL to our API
+      // =====================================================
+
+      const response = await fetch("/api/gallery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          imageUrl: cloudinaryData.secure_url,
+        }),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            "Failed to upload photo."
+          data?.error ||
+            "Failed to save gallery photo."
         );
       }
 
-      // Reset form
+      // =====================================================
+      // SUCCESS
+      // =====================================================
+
+      showToast(
+        "Gallery photo uploaded successfully!",
+        "success"
+      );
+
       setTitle("");
       setFile(null);
 
@@ -228,867 +214,341 @@ export default function AdminGalleryPage() {
       setPreview("");
 
       // Reset file input
-      const fileInput =
-        document.getElementById(
-          "gallery-file"
-        ) as HTMLInputElement | null;
+      const fileInput = document.getElementById(
+        "gallery-file"
+      ) as HTMLInputElement | null;
 
       if (fileInput) {
         fileInput.value = "";
       }
 
-      // Refresh gallery
       await fetchPhotos();
-
-      showToast(
-        "success",
-        "Photo uploaded successfully."
-      );
-    } catch (error) {
+    } catch (error: any) {
       console.error(
-        "Upload photo error:",
+        "Gallery upload error:",
         error
       );
 
       showToast(
-        "error",
-        error instanceof Error
-          ? error.message
-          : "Failed to upload photo."
+        error?.message ||
+          "Failed to upload gallery photo.",
+        "error"
       );
     } finally {
       setSaving(false);
     }
   };
 
-  // =========================
-  // OPEN DELETE MODAL
-  // =========================
-
-  const openDeleteModal = (
-    id: string,
-    photoTitle: string
-  ) => {
-    if (saving) {
-      return;
-    }
-
-    setDeleteId(id);
-    setDeleteTitle(photoTitle);
-  };
-
-  // =========================
-  // CLOSE DELETE MODAL
-  // =========================
-
-  const closeDeleteModal = () => {
-    if (saving) {
-      return;
-    }
-
-    setDeleteId(null);
-    setDeleteTitle("");
-  };
-
-  // =========================
-  // DELETE PHOTO
-  // =========================
-
   const handleDelete = async () => {
-    if (!deleteId || saving) {
+    if (!deleteId) {
       return;
     }
 
     try {
-      setSaving(true);
-
-      const response = await fetch(
-        "/api/gallery",
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            id: deleteId,
-          }),
-        }
-      );
+      const response = await fetch("/api/gallery", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: deleteId,
+        }),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
+          data?.error ||
             "Failed to delete photo."
         );
       }
 
-      // Close modal
+      showToast(
+        "Gallery photo deleted successfully.",
+        "success"
+      );
+
       setDeleteId(null);
       setDeleteTitle("");
 
-      // Refresh gallery
       await fetchPhotos();
-
-      showToast(
-        "success",
-        "Photo deleted successfully."
-      );
-    } catch (error) {
+    } catch (error: any) {
       console.error(
-        "Delete photo error:",
+        "Delete gallery error:",
         error
       );
 
       showToast(
-        "error",
-        error instanceof Error
-          ? error.message
-          : "Failed to delete photo."
+        error?.message ||
+          "Failed to delete photo.",
+        "error"
       );
-    } finally {
-      setSaving(false);
     }
   };
 
-  // =========================
-  // PAGE
-  // =========================
-
   return (
-    <main className="min-h-screen bg-[#f7f5f0] px-6 py-12 md:px-8">
+    <div className="min-h-screen bg-slate-50">
+      <AdminHeader />
 
-      {/* TOAST */}
-
-      {toast && (
-        <Toast
-          type={toast.type}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
-
-      <div className="mx-auto max-w-6xl">
-
-        {/* ADMIN NAVIGATION */}
-
-        <AdminHeader />
-
-        {/* PAGE HEADER */}
-
-        <div className="mb-14">
-
-          <p className="mb-4 text-sm uppercase tracking-[0.28em] text-red-900">
-            Prabhu Union
-          </p>
-
-          <h1 className="font-serif text-4xl font-medium text-[#171717] md:text-5xl">
-            Gallery Management
-          </h1>
-
-          <p className="mt-4 max-w-xl text-gray-500">
-            Add and manage photos from union
-            meetings, programs, events, and
-            activities.
-          </p>
-
-        </div>
-
-        {/* UPLOAD CARD */}
-
-        <div
-          className="
-            relative
-            mb-16
-            overflow-hidden
-            rounded-[2rem]
-            border
-            border-white/80
-            bg-white/60
-            p-8
-            shadow-[0_20px_60px_rgba(0,0,0,0.06)]
-            backdrop-blur-2xl
-            md:p-10
-          "
-        >
-
-          {/* GLASS LIGHT */}
-
-          <div
-            className="
-              pointer-events-none
-              absolute
-              -right-24
-              -top-24
-              h-64
-              w-64
-              rounded-full
-              bg-red-100/50
-              blur-3xl
-            "
-          />
-
-          <div
-            className="
-              pointer-events-none
-              absolute
-              -bottom-24
-              -left-24
-              h-56
-              w-56
-              rounded-full
-              bg-white/70
-              blur-3xl
-            "
-          />
-
-          <div className="relative">
-
-            {/* CARD HEADER */}
-
-            <div className="mb-8">
-
-              <div className="mb-4 flex items-center gap-3">
-
-                <div
-                  className="
-                    rounded-2xl
-                    bg-red-900
-                    p-3
-                    text-white
-                    shadow-lg
-                  "
-                >
-                  <Upload className="h-5 w-5" />
-                </div>
-
-                <p className="text-sm uppercase tracking-[0.25em] text-gray-500">
-                  Gallery
-                </p>
-
-              </div>
-
-              <h2 className="font-serif text-3xl text-[#171717]">
-                Add New Photo
-              </h2>
-
-              <p className="mt-2 text-gray-500">
-                Upload a new moment to the
-                union gallery.
-              </p>
-
-            </div>
-
-            {/* FORM */}
-
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6"
-            >
-
-              {/* TITLE */}
-
-              <div>
-
-                <label
-                  htmlFor="gallery-title"
-                  className="
-                    mb-2
-                    block
-                    text-sm
-                    font-medium
-                    text-gray-700
-                  "
-                >
-                  Photo Title
-                </label>
-
-                <input
-                  id="gallery-title"
-                  type="text"
-                  value={title}
-                  onChange={(e) =>
-                    setTitle(e.target.value)
-                  }
-                  placeholder="Executive Committee Meeting"
-                  disabled={saving}
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-black/10
-                    bg-white/70
-                    px-4
-                    py-3
-                    outline-none
-                    transition
-                    placeholder:text-gray-400
-                    focus:border-red-900
-                    focus:bg-white
-                    focus:ring-4
-                    focus:ring-red-900/10
-                    disabled:opacity-50
-                  "
-                />
-
-              </div>
-
-              {/* FILE */}
-
-              <div>
-
-                <label
-                  htmlFor="gallery-file"
-                  className="
-                    mb-2
-                    block
-                    text-sm
-                    font-medium
-                    text-gray-700
-                  "
-                >
-                  Upload Photo
-                </label>
-
-                <input
-                  id="gallery-file"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  disabled={saving}
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-black/10
-                    bg-white/70
-                    px-4
-                    py-3
-                    outline-none
-                    file:mr-4
-                    file:rounded-full
-                    file:border-0
-                    file:bg-red-900
-                    file:px-4
-                    file:py-2
-                    file:text-sm
-                    file:font-medium
-                    file:text-white
-                    file:cursor-pointer
-                  "
-                />
-
-                <p className="mt-2 text-xs text-gray-500">
-                  JPG, PNG, WEBP or other image files.
-                </p>
-
-              </div>
-
-              {/* PREVIEW */}
-
-              {preview && (
-                <div>
-
-                  <p className="mb-3 text-sm font-medium text-gray-700">
-                    Preview
-                  </p>
-
-                  <div
-                    className="
-                      max-w-md
-                      overflow-hidden
-                      rounded-3xl
-                      border
-                      border-white
-                      bg-white/50
-                      p-2
-                      shadow-lg
-                    "
-                  >
-
-                    <img
-                      src={preview}
-                      alt="Selected preview"
-                      className="
-                        h-64
-                        w-full
-                        rounded-2xl
-                        object-cover
-                      "
-                    />
-
-                  </div>
-
-                </div>
-              )}
-
-              {/* SELECTED FILE */}
-
-              {file && (
-                <div
-                  className="
-                    flex
-                    items-center
-                    gap-3
-                    rounded-2xl
-                    border
-                    border-black/5
-                    bg-white/50
-                    px-4
-                    py-3
-                  "
-                >
-
-                  <ImageIcon className="h-5 w-5 text-red-900" />
-
-                  <p className="truncate text-sm text-gray-600">
-                    {file.name}
-                  </p>
-
-                </div>
-              )}
-
-              {/* UPLOAD BUTTON */}
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-full
-                  bg-red-900
-                  px-7
-                  py-3
-                  font-medium
-                  text-white
-                  shadow-lg
-                  transition-all
-                  duration-300
-                  hover:-translate-y-1
-                  hover:bg-red-800
-                  hover:shadow-xl
-                  active:scale-95
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                "
-              >
-
-                <Upload className="h-4 w-4" />
-
-                {saving
-                  ? "Uploading..."
-                  : "Upload Photo"}
-
-              </button>
-
-            </form>
-
-          </div>
-
-        </div>
-
-        {/* EXISTING PHOTOS */}
-
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
         <div className="mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg">
+              <ImageIcon size={24} />
+            </div>
 
-          <p className="text-xs uppercase tracking-[0.28em] text-gray-500">
-            Gallery
-          </p>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">
+                Gallery
+              </h1>
 
-          <h2 className="mt-2 font-serif text-3xl text-[#171717]">
-            Existing Photos
-          </h2>
-
+              <p className="mt-1 text-sm text-slate-500">
+                Manage Prabhu Union gallery photos
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* LOADING */}
-
-        {loading && (
-          <div
-            className="
-              rounded-3xl
-              border
-              border-white
-              bg-white/60
-              p-14
-              text-center
-              shadow-sm
-              backdrop-blur-xl
-            "
-          >
-
-            <div
-              className="
-                mx-auto
-                mb-4
-                h-8
-                w-8
-                animate-spin
-                rounded-full
-                border-2
-                border-gray-200
-                border-t-red-900
-              "
-            />
-
-            <p className="text-gray-500">
-              Loading gallery...
-            </p>
-
-          </div>
-        )}
-
-        {/* EMPTY STATE */}
-
-        {!loading && photos.length === 0 && (
-          <div
-            className="
-              rounded-3xl
-              border
-              border-white
-              bg-white/60
-              p-14
-              text-center
-              shadow-sm
-              backdrop-blur-xl
-            "
-          >
-
-            <div
-              className="
-                mx-auto
-                mb-5
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-2xl
-                bg-gray-100
-              "
-            >
-              <ImageIcon className="h-6 w-6 text-gray-400" />
-            </div>
-
-            <h3 className="font-serif text-2xl text-[#171717]">
-              No photos yet
-            </h3>
-
-            <p className="mt-2 text-gray-500">
-              Upload your first union photo
-              above.
-            </p>
-
-          </div>
-        )}
-
-        {/* PHOTO GRID */}
-
-        {!loading && photos.length > 0 && (
-          <div
-            className="
-              grid
-              gap-6
-              sm:grid-cols-2
-              lg:grid-cols-3
-            "
-          >
-
-            {photos.map((photo) => (
-              <article
-                key={photo._id}
-                className="
-                  group
-                  overflow-hidden
-                  rounded-[1.5rem]
-                  border
-                  border-white/80
-                  bg-white/65
-                  shadow-[0_15px_40px_rgba(0,0,0,0.06)]
-                  backdrop-blur-xl
-                  transition-all
-                  duration-500
-                  hover:-translate-y-2
-                  hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)]
-                "
-              >
-
-                {/* IMAGE */}
-
-                <div
-                  className="
-                    aspect-[4/3]
-                    overflow-hidden
-                    bg-gray-100
-                  "
-                >
-
-                  <img
-                    src={photo.imageUrl}
-                    alt={photo.title}
-                    loading="lazy"
-                    className="
-                      h-full
-                      w-full
-                      object-cover
-                      transition-transform
-                      duration-700
-                      group-hover:scale-110
-                    "
-                  />
-
-                </div>
-
-                {/* DETAILS */}
-
-                <div className="p-5">
-
-                  <h3
-                    className="
-                      font-serif
-                      text-xl
-                      text-[#171717]
-                      transition-colors
-                      duration-300
-                      group-hover:text-red-900
-                    "
-                  >
-                    {photo.title}
-                  </h3>
-
-                  <p className="mt-2 text-xs text-gray-400">
-                    Added{" "}
-                    {new Date(
-                      photo.createdAt
-                    ).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      }
-                    )}
-                  </p>
-
-                  {/* DELETE */}
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openDeleteModal(
-                        photo._id,
-                        photo.title
-                      )
-                    }
-                    disabled={saving}
-                    className="
-                      mt-5
-                      flex
-                      w-full
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-full
-                      border
-                      border-gray-200
-                      bg-white/50
-                      px-4
-                      py-2.5
-                      text-sm
-                      text-gray-600
-                      transition-all
-                      duration-300
-                      hover:border-red-200
-                      hover:bg-red-50
-                      hover:text-red-700
-                      disabled:cursor-not-allowed
-                      disabled:opacity-50
-                    "
-                  >
-
-                    <Trash2 className="h-4 w-4" />
-
-                    Delete Photo
-
-                  </button>
-
-                </div>
-
-              </article>
-            ))}
-
-          </div>
-        )}
-
-      </div>
-
-      {/* DELETE CONFIRMATION MODAL */}
-
-      {deleteId && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[90]
-            flex
-            items-center
-            justify-center
-            bg-black/40
-            p-6
-            backdrop-blur-md
-          "
-          onClick={closeDeleteModal}
-        >
-
-          <div
-            className="
-              relative
-              w-full
-              max-w-md
-              rounded-[2rem]
-              border
-              border-white/80
-              bg-white/80
-              p-7
-              shadow-[0_30px_100px_rgba(0,0,0,0.2)]
-              backdrop-blur-2xl
-            "
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            {/* CLOSE */}
-
-            <button
-              type="button"
-              disabled={saving}
-              onClick={closeDeleteModal}
-              className="
-                absolute
-                right-5
-                top-5
-                rounded-full
-                p-2
-                text-gray-400
-                transition
-                hover:bg-black/5
-                hover:text-gray-700
-                disabled:opacity-50
-              "
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* WARNING ICON */}
-
-            <div
-              className="
-                mb-5
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-2xl
-                bg-red-100
-                text-red-700
-              "
-            >
-              <AlertTriangle className="h-6 w-6" />
-            </div>
-
-            {/* TITLE */}
-
-            <h2 className="font-serif text-2xl text-[#171717]">
-              Delete Photo?
+        {/* Upload Section */}
+        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-slate-900">
+              Upload New Photo
             </h2>
 
-            {/* MESSAGE */}
-
-            <p
-              className="
-                mt-3
-                text-sm
-                leading-6
-                text-gray-600
-              "
-            >
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-gray-800">
-                "{deleteTitle}"
-              </span>
-              ?
-              <br />
-              This action cannot be undone.
+            <p className="mt-1 text-sm text-slate-500">
+              Add a new photo to the gallery.
             </p>
+          </div>
 
-            {/* ACTIONS */}
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
+            {/* Title */}
+            <div>
+              <label
+                htmlFor="gallery-title"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Photo Title
+              </label>
 
-            <div className="mt-7 flex gap-3">
+              <input
+                id="gallery-title"
+                type="text"
+                value={title}
+                onChange={(e) =>
+                  setTitle(e.target.value)
+                }
+                placeholder="Enter photo title"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            {/* File */}
+            <div>
+              <label
+                htmlFor="gallery-file"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Image
+              </label>
+
+              <input
+                id="gallery-file"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="block w-full cursor-pointer rounded-xl border border-slate-300 bg-white text-sm text-slate-600 file:mr-4 file:border-0 file:bg-blue-50 file:px-4 file:py-3 file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+
+            {/* Preview */}
+            {preview && (
+              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <img
+                  src={preview}
+                  alt="Preview"
+                  className="max-h-96 w-full object-contain"
+                />
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Upload size={18} />
+
+              {saving
+                ? "Uploading..."
+                : "Upload Photo"}
+            </button>
+          </form>
+        </section>
+
+        {/* Gallery */}
+        <section>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">
+                Gallery Photos
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                {photos.length} photo
+                {photos.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+              <p className="text-sm text-slate-500">
+                Loading gallery...
+              </p>
+            </div>
+          ) : photos.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+              <ImageIcon
+                size={40}
+                className="mx-auto mb-3 text-slate-400"
+              />
+
+              <p className="font-medium text-slate-700">
+                No gallery photos yet
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Upload your first photo above.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {photos.map((photo) => (
+                <div
+                  key={photo._id}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                >
+                  <div className="aspect-video overflow-hidden bg-slate-100">
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.title}
+                      className="h-full w-full object-cover transition duration-300 hover:scale-105"
+                    />
+                  </div>
+
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="truncate font-semibold text-slate-900">
+                          {photo.title}
+                        </h3>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {new Date(
+                            photo.createdAt
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteId(photo._id);
+                          setDeleteTitle(
+                            photo.title
+                          );
+                        }}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                        title="Delete photo"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed right-5 top-5 z-50 rounded-xl px-5 py-3 text-sm font-medium text-white shadow-lg ${
+            toast.type === "success"
+              ? "bg-green-600"
+              : "bg-red-600"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Delete Photo
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Are you sure you want to delete this
+                  photo?
+                </p>
+              </div>
 
               <button
                 type="button"
-                disabled={saving}
-                onClick={closeDeleteModal}
-                className="
-                  flex-1
-                  rounded-full
-                  border
-                  border-gray-200
-                  bg-white/70
-                  px-5
-                  py-3
-                  text-sm
-                  font-medium
-                  text-gray-700
-                  transition
-                  hover:bg-gray-100
-                  disabled:opacity-50
-                "
+                onClick={() => {
+                  setDeleteId(null);
+                  setDeleteTitle("");
+                }}
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-6 rounded-xl bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-900">
+                {deleteTitle}
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteId(null);
+                  setDeleteTitle("");
+                }}
+                className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Cancel
               </button>
 
               <button
                 type="button"
-                disabled={saving}
                 onClick={handleDelete}
-                className="
-                  flex-1
-                  rounded-full
-                  bg-red-900
-                  px-5
-                  py-3
-                  text-sm
-                  font-medium
-                  text-white
-                  shadow-lg
-                  transition-all
-                  duration-300
-                  hover:bg-red-800
-                  hover:shadow-xl
-                  active:scale-95
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                "
+                className="rounded-xl bg-red-600 px-5 py-3 text-sm font-medium text-white hover:bg-red-700"
               >
-                {saving
-                  ? "Deleting..."
-                  : "Delete Photo"}
+                Delete
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
-
-    </main>
+    </div>
   );
 }
